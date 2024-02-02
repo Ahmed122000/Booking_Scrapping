@@ -9,7 +9,11 @@ from selenium.webdriver.support import expected_conditions as EC
 
 
 
-
+#dictionary to hold the data of each hotel
+hotels = {'title' : [], 
+          'average_score' : [], 
+          'grade': [], 
+          '#reviewers':[]} 
 #def get_hotels(country_code, page_numbers):
 for i in range(3):
     #page url()
@@ -28,7 +32,6 @@ for i in range(3):
         #open the file to write the page HTML of the page in case of timeout
         with open('source_code_exception.html', 'w') as f: 
             f.write(driver.page_source)
-        f.close() #close the file
         print(f"Page source at timeout: {driver.page_source}")
 
 
@@ -38,14 +41,7 @@ for i in range(3):
             f.write(driver.page_source)
 
     page_source = driver.page_source
-    f.close() #close the file
     driver.quit() #close the driver
-
-    #dictionary to hold the data of each hotel
-    hotels = {'title' : [], 
-            'average_score' : [], 
-            'grade': [], 
-            '#reviewers':[]} 
     
     #start scrapping
     soup = BeautifulSoup(page_source, 'lxml')
@@ -66,6 +62,42 @@ for i in range(3):
         #get number of reviewers
         reviewers = hotel_card.find('div', class_='abf093bdfe f45d8e4c32 d935416c47').text
         
+        hotel_link = hotel_card.find('div', class_='a5922b8ca1').a['href']
+
+        '''
+        driver = webdriver.Firefox()
+        driver.get(hotel_link)
+
+        try:
+            # Wait for some time for dynamic content to load
+            wait = WebDriverWait(driver, 30)
+
+        except TimeoutException as e:
+            print(f"TimeoutException: {e}")
+            #open the file to write the page HTML of the page in case of timeout
+            with open('hotel_page__exception.html', 'w') as f: 
+                f.write(driver.page_source)
+            f.close() #close the file
+        
+        #print the file after the try/exception end
+        print('save the hotel page correctly\n')
+        with open('hotel_source_code.html', 'w') as f: 
+            f.write(driver.page_source)
+
+        hotel_page_source = driver.page_source
+        f.close() #close the file
+        driver.quit() #close the driver
+        
+        sub_soup = BeautifulSoup(hotel_page_source, 'lxml')
+'''
+
+        hotel_page_source = requests.get(hotel_link).text
+        with open('hotel_source_code.html', 'w') as f: 
+            f.write(hotel_page_source)
+        
+        sub_soup = BeautifulSoup(hotel_page_source, 'lxml')
+
+
         #save the data in the dictionary 
         hotels['title'].append(title)
         hotels['average_score'].append(average_score)
@@ -73,7 +105,7 @@ for i in range(3):
         hotels['#reviewers'].append(reviewers)
 
         #print the data to check it 
-        print(f'{title} \n{average_score}: {reviewers} --> {grade}\n')
+        print(f'{title} \n{average_score}: {reviewers} --> {grade}\n\n')
 
 #print the number of hotels we found    
 print(len(hotels['title']))
@@ -83,10 +115,6 @@ print(len(hotels['title']))
 #    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 #    }
 
-#page = requests.get(link).text
-#with open('booking_all_hotels.html', 'w') as f:
-#    f.write(page)
-#f.close()
 #'https://www.booking.com/searchresults.en-gb.html?label=gog235jc-1FCAEiBWhvdGVsKIICOOgHSDNYA2hDiAEBmAEJuAEZyAEP2AEB6AEB-AENiAIBqAIDuAKZ7-2tBsACAdICJDQ5NDY3ZTNjLTZiYzMtNDFjNi05MGQ4LTk0NjAwNGNiZWRlY9gCBuACAQ&sid=0ca19a26ae77e73a83fd4cdc2f1ce287&aid=397594&city=-290692'
 #'https://www.booking.com/city/eg/cairo.en-gb.html?aid=397594&label=gog235jc-1BCAEiBWhvdGVsKIICOOgHSDNYA2hDiAEBmAEJuAEZyAEP2AEB6AEBiAIBqAIDuAKZ7-2tBsACAdICJDQ5NDY3ZTNjLTZiYzMtNDFjNi05MGQ4LTk0NjAwNGNiZWRlY9gCBeACAQ&sid=0ca19a26ae77e73a83fd4cdc2f1ce287'
 #'https://www.booking.com/searchresults.en-gb.html?label=gog235jc-1FCAEiBWhvdGVsKIICOOgHSDNYA2hDiAEBmAEJuAEZyAEP2AEB6AEB-AENiAIBqAIDuAKZ7-2tBsACAdICJDQ5NDY3ZTNjLTZiYzMtNDFjNi05MGQ4LTk0NjAwNGNiZWRlY9gCBuACAQ&sid=0ca19a26ae77e73a83fd4cdc2f1ce287&aid=397594&city=-290692'
