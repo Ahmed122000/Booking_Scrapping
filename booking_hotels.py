@@ -20,18 +20,22 @@ def get_rooms(page_source):
     imgs = []
     images = page.find_all('div', class_='bh-photo-grid-thumb-cell')
     for image in images:
-        img_source = image.img
-        img_source = img_source['src'] if img_source != None else "not_found"
-        imgs.append(img_source)
+        if(image.img != None):
+            img_source = image.img['src']
+            imgs.append(img_source)
 
     link_image = page.find_all('a', class_='bh-photo-grid-item bh-photo-grid-side-photo active-image')
     for url in link_image:
-        url = url.img['src'] if url.img != None else "not_found"
-        imgs.append(url)
+        if(url.img != None):
+            url = url.img['src']
+            imgs.append(url)
 
-    link_image = page.find('a', class_='bh-photo-grid-item bh-photo-grid-photo1 active-image').img
-    link_image = link_image['src'] if link_image != None else "not_found"
-    imgs.append(link_image)
+    link_image = page.find('a', class_='bh-photo-grid-item bh-photo-grid-photo1 active-image')
+    if(link_image != None):
+        link_image = link_image.img
+        if(link_image != None):
+            link_image = link_image['src']
+            imgs.append(link_image)
     
 
     room_detail['images'] = imgs
@@ -192,11 +196,20 @@ if __name__== '__main__':
     
     print('Starting Scrapping......')
     for city in countries[input_country]:
-        print(f'finding {pages[city]} page(s) of {city} hotels......')
-        get_hotels(input_country, city, countries[input_country][city],pages[city])
-            # Save to a JSON file
-        with open(f'{input_country}_{city}_hotels.json', 'w') as json_file:
-            json.dump(hotels, json_file, indent=2)    
-        print(f'\n\nthe total hotels found for now are: {len(hotels)}')
-        hotels = {}
+        try:
+            print(f'finding {pages[city]} page(s) of {city} hotels......')
+            get_hotels(input_country, city, countries[input_country][city],pages[city])
+                # Save to a JSON file
+            with open(f'{input_country}_{city}_hotels.json', 'w') as json_file:
+                json.dump(hotels, json_file, indent=2)    
+            print(f'\n\nthe total hotels found for now are: {len(hotels)}')
+            hotels = {}
+
+        except Exception as e:
+            print('An error Occur...!!!')
+            print('Saving the last result')
+            with open(f'{input_country}_{city}_hotels.json', 'w') as json_file:
+                json.dump(hotels, json_file, indent=2)    
+            print(f'\n\nthe total hotels found for now are: {len(hotels)}')
+            hotels = {}
 
