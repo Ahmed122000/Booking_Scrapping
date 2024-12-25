@@ -49,7 +49,7 @@ To get this project up and running on your local machine, follow the steps below
 1. **Run the scraper**: To start scraping hotel data, run the `scraper.py` script. The data will be saved in a `hotels.json` file.
 
     ```bash
-    python scraper.py
+    python booking_hotels.py
     ```
 
 2. **Scrape specific cities**: You can modify the script to scrape data for specific cities by changing the city list in the code or passing arguments to the script.
