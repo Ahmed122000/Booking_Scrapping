@@ -1,15 +1,33 @@
+import os
 import json
+import time
+import logging 
 import requests
+
 from bs4 import BeautifulSoup
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options 
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait 
 from selenium.webdriver.support import expected_conditions as EC
 
+logging.basicConfig(
+    filename="Scraper.log", 
+    level=logging.INFO, 
+    format="{asctime} - {levelname} - {message}", 
+    style="{")
 
 
-hotels = {} #dictionary to hold the hotels with their data 
+def init_driver():
+    options = Options()
+    options.add_argument('--headless')
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    driver = webdriver.Firefox(options=options)
+    return driver
+
 def get_rooms(page_source):
     room_detail = {}
     page = BeautifulSoup(page_source, 'lxml')
@@ -71,37 +89,25 @@ def get_rooms(page_source):
     return room_detail
 
 def get_hotels(country, city, city_code, page_numbers=1):
+    driver = init_driver()
+    hotels = {}
 
     for i in range(page_numbers):
-
-        #page url(), we can update the code {&city} and number of page {&offset}
         url = f'https://www.booking.com/searchresults.en-gb.html?label=gog235jc-1FCAEiBWhvdGVsKIICOOgHSDNYA2hDiAEBmAEJuAEZyAEP2AEB6AEB-AENiAIBqAIDuAKZ7-2tBsACAdICJDQ5NDY3ZTNjLTZiYzMtNDFjNi05MGQ4LTk0NjAwNGNiZWRlY9gCBuACAQ&sid=0ca19a26ae77e73a83fd4cdc2f1ce287&aid=397594&city=-{city_code}&offset={i*25}'
+        logging.info(f"Fetching page {i+1} for {city}...")
 
-        #open the driver and get the page
-        driver = webdriver.Firefox()
-        #print(f'opening the link: {url}')
+
         driver.get(url)
-
         try:
             # Wait for some time for dynamic content to load
-            wait = WebDriverWait(driver, 30)
-
+            WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '.c82435a4b8.a178069f51.a6ae3c2b40.a18aeea94d.d794b7a0f7.f53e278e95.c6710787a4'))
+            )
         except TimeoutException as e:
-            print(f"TimeoutException: {e}")
-            #open file to write the page HTML of the page in case of timeout
-            #with open('source_code_exception.html', 'w') as f: 
-            #    f.write(driver.page_source)
-            #print(f"Page source at timeout: {driver.page_source}")
-
-
-        #print the file after the try/exception end
-        #print('save the file with no exception\n')
-        #with open('source_code.html', 'w') as f: 
-        #    f.write(driver.page_source)
-
-        page_source = driver.page_source
-        driver.quit() #close the driver
-        print(f'finding hotels in page {i+1}......')
+            logging.error(f"Timeout while loading page {i+1}: {e}")
+            continue
+        
+        page_source = driver.page_source 
         
         #start scrapping
         soup = BeautifulSoup(page_source, 'lxml')
@@ -111,16 +117,15 @@ def get_hotels(country, city, city_code, page_numbers=1):
         #go through each card and check its info 
         for hotel_card in hotel_cards:
             hotel = {'city':city, 
-                     'country':country, } #temp dictionary to hold the data of each hotel
+                     'country':country} #temp dictionary to hold the data of each hotel
 
             if(hotel_card == None):
-                print('hotel_card == None')
                 continue
 
             #get the title and create new entry to save the new hotel
             title = hotel_card.find('div', class_ = 'f6431b446c a15b38c233')
             if title != None:
-                title = title.text
+                title = title.text.strip()
             else:
                 continue
 
@@ -144,31 +149,31 @@ def get_hotels(country, city, city_code, page_numbers=1):
             #get link for the subpage of each hotel
             hotel_link = hotel_card.find('div', class_='a5922b8ca1').a['href']
 
-            #get the subpage of the hotel to scrap it
-            hotel_page_source = requests.get(hotel_link).text
-            #with open('hotel_source_code.html', 'w') as f: 
-             #   f.write(hotel_page_source)
+            if hotel_link: 
+                try: 
+                    #get the subpage of the hotel to scrap it
+                    hotel_page_source = requests.get(hotel_link)
+                    hotel_page_source.raise_for_status()
             
-            #sub_soup = BeautifulSoup(hotel_page_source, 'lxml')
-            room_details = get_rooms(hotel_page_source)
+                    #sub_soup = BeautifulSoup(hotel_page_source, 'lxml')
+                    room_details = get_rooms(hotel_page_source.text)
 
-            #save the data in the dictionary 
-            for key in room_details.keys():
-                hotel[key] = room_details[key]
+                    #save the data in the dictionary 
+                    hotel.update(room_details)
+                except requests.exceptions.RequestException as e: 
+                    logging.error(f'Failed to fetch hotel details for {title}: {e}')
+                    continue
 
             hotels[title] = hotel
-            #print the data to check it 
-            #print(f'{title} \n{average_score}: {reviewers} --> {grade}\n\n')
-        print(f'page {i+1} in {city}....done!') 
-        print(f'{len(hotel_cards)} hotels are found')   
-    #print the number of hotels we found    
-    print(f'{len(hotels)} hotels are found until now!')
-            
+        logging.info(f"Page {i+1} for {city} completed with {len(hotel_cards)} hotels found.")
+        
+        time.sleep(2)
+    driver.quit()
+    return hotels           
 
-if __name__== '__main__':
-    input_country = input('enter the city to get its hotels: \n> ')
-    
+if __name__== '__main__': 
     countries = {'egypt':
+
                  {'cairo' : '290692',
                   'alex': '290263',
                   'hurghada': '290029',
@@ -178,7 +183,7 @@ if __name__== '__main__':
                   'el-alamein':'289704',
                   'marsa-matruh': '298644',
                   'luxor':'290821',
-                  'aswan':'291535'
+                 'aswan':'291535'
                   }, 
                 }
     
@@ -194,22 +199,20 @@ if __name__== '__main__':
              'aswan': 6
              }
     
-    print('Starting Scrapping......')
-    for city in countries[input_country]:
-        try:
-            print(f'finding {pages[city]} page(s) of {city} hotels......')
-            get_hotels(input_country, city, countries[input_country][city],pages[city])
-                # Save to a JSON file
-            with open(f'{input_country}_{city}_hotels.json', 'w') as json_file:
-                json.dump(hotels, json_file, indent=2)    
-            print(f'\n\nthe total hotels found for now are: {len(hotels)}')
-            hotels = {}
-
-        except Exception as e:
-            print('An error Occur...!!!')
-            print('Saving the last result')
-            with open(f'{input_country}_{city}_hotels.json', 'w') as json_file:
-                json.dump(hotels, json_file, indent=2)    
-            print(f'\n\nthe total hotels found for now are: {len(hotels)}')
-            hotels = {}
+    input_country = input('enter the city to get its hotels: \n> ').lower()
+    
+    if input_country in countries:
+        for city in countries[input_country]:
+            try:
+                logging.info(f"Scraping {city}...")
+                hotels = get_hotels(input_country, city, countries[input_country][city],pages[city])
+                    # Save to a JSON file
+                with open(f'{input_country}_{city}_hotels.json', 'w') as json_file:
+                    json.dump(hotels, json_file, indent=2)    
+                logging.info(f"Scraping for {city} completed. Data saved.")
+         
+            except Exception as e:
+                logging.error(f"Error scraping {city}: {e}")
+    else: 
+        logging.error(f"Country {input_country} not found in the list.")
 
