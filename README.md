@@ -1,83 +1,166 @@
+# Hotel Scraper and API Service
 
-# Booking Scraping
+## Project Description
+This project provides a web scraping and API service for collecting detailed hotel information from Booking.com. It consists of two main components:
 
-This project automates the extraction of hotel data from the Booking.com website using Python. It scrapes hotel listings for details such as hotel name, address, images, amenities, ratings, and room types. The project handles dynamic content loading, processes and cleans the scraped data, and stores it in a structured format (JSON).
+1. **Web Scraper**: A Python-based scraper that extracts hotel information such as address, images, room types, amenities, and reviews.
+2. **Flask API**: A RESTful API built using Flask that allows users to interact with the scraper and retrieve hotel data in JSON format or save it as a downloadable file.
 
 ## Features
-- Scrapes hotel listings from multiple cities
-- Extracts detailed hotel information (name, address, amenities, etc.)
-- Handles dynamic content loading using Selenium WebDriver
-- Stores the scraped data in a structured **JSON** format
-- Incorporates error handling and timeout exceptions for robustness
-- Supports scraping up to 40 pages per city, collecting over 1,000 hotels
-
-## Technologies Used
-- **Python**
-- **BeautifulSoup**: For parsing HTML and extracting data.
-- **Requests**: For making HTTP requests.
-- **Selenium WebDriver**: For handling JavaScript-rendered pages.
-- **JSON**: For storing and structuring the scraped data.
-
-## Installation
-
-To get this project up and running on your local machine, follow the steps below:
-
-1. **Clone the repository**:
-
-    ```bash
-    git clone https://github.com/Ahmed122000/Booking_Scrapping.git
-    cd Booking_Scrapping
-    ```
-
-2. **Install the required Python packages**:
-
-    It’s recommended to use a virtual environment. You can create one using the following commands:
-
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use 'venv\Scriptsctivate'
-    ```
-
-    Then install the dependencies:
-
-3. **Download WebDriver** (for Selenium):
-   
-   To use Selenium, you need to download a WebDriver (e.g., ChromeDriver) that matches your browser version. Place it in your project directory or specify its path in your script.
-
-## Usage
-
-1. **Run the scraper**: To start scraping hotel data, run the `scraper.py` script. The data will be saved in a `hotels.json` file.
-
-    ```bash
-    python booking_hotels.py
-    ```
-
-2. **Scrape specific cities**: You can modify the script to scrape data for specific cities by changing the city list in the code or passing arguments to the script.
-
-3. **View scraped data**: The resulting data is stored in a `hotels.json` file, which contains all the extracted information in a structured format.
-
-## Example Output (JSON)
-
-The `hotels.json` file contains information like:
-
-```json
-[
-  {
-    "hotel_name": "Hotel ABC",
-    "address": "123 Street, City",
-    "amenities": ["Free Wi-Fi", "Swimming Pool", "Spa"],
-    "rating": 4.5,
-    "room_types": ["Single", "Double", "Suite"],
-    "images": ["url1", "url2"]
-  },
-  ...
-]
-```
-
-## Contributing
-
-Feel free to fork this repository and submit pull requests for improvements or new features. If you find bugs, please report them via GitHub Issues.
+- Scrape hotel details from Booking.com for specific cities in Egypt.
+- Extract information such as address, amenities, room types, and images.
+- Save the scraped data as JSON files.
+- API endpoints to:
+  - Retrieve city codes for scraping.
+  - Start a scraping process and get results.
+  - Download scraped data as a file.
 
 ---
 
-If you have any questions or need help with the project, feel free to open an issue or contact me directly.
+## File Structure
+
+### 1. `booking_hotels.py`
+This file contains the core scraping logic, implemented in the `Scraper` class.
+
+**Key Features:**
+- Initializes a Selenium WebDriver to interact with dynamic web pages.
+- Parses hotel information using BeautifulSoup.
+- Handles multiple cities and pagination for comprehensive scraping.
+- Saves scraped data in JSON format.
+
+### 2. `app.py`
+This file implements the Flask API service, enabling interaction with the scraper.
+
+**Endpoints:**
+1. **`GET /codes`**: Returns a list of city codes for scraping.
+   - **Response Format**:
+     ```json
+     {
+       "cairo": "290692",
+       "alexandria": "290263",
+       ...
+     }
+     ```
+
+2. **`GET /scrape`**: Initiates the scraping process.
+   - **Query Parameters:**
+     - `city`: Name of the city to scrape (required).
+     - `city_code`: City code for Booking.com (required).
+     - `pages`: Number of pages to scrape (default: 1).
+     - `format`: Output format (`json` or `file`).
+   - **Response:**
+     - Returns hotel data in JSON format or a download link to the JSON file.
+
+3. **`GET /download/<file_name>`**: Downloads a previously saved JSON file.
+   - **Response:**
+     - File download if it exists, otherwise an error message.
+
+---
+
+## Installation and Setup
+
+### Prerequisites
+- Python 3.7+
+- Firefox browser
+- Geckodriver for Selenium
+
+### Required Python Libraries
+Install the required libraries using the following command:
+```bash
+pip install -r requirements.txt
+```
+
+### `requirements.txt`
+```
+beautifulsoup4
+selenium
+requests
+flask
+```
+
+### Setup Instructions
+1. Clone the repository:
+   ```bash
+   git clone <repository_url>
+   cd <repository_directory>
+   ```
+
+2. Install the dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Run the Flask API:
+   ```bash
+   python app.py
+   ```
+
+4. Access the API on `http://localhost:5000`.
+
+---
+
+## Usage
+
+### Example API Usage
+#### Retrieve City Codes
+```bash
+GET http://localhost:5000/codes
+```
+Response:
+```json
+{
+  "cairo": "290692",
+  "alexandria": "290263",
+  "hurghada": "290029",
+  ...
+}
+```
+
+#### Start Scraping
+```bash
+GET http://localhost:5000/scrape?city=cairo&city_code=290692&pages=1&format=json
+```
+Response:
+- JSON data of scraped hotels or a download link for the file:
+  ```json
+  {
+    "message": "Scraping for cairo completed. Data saved",
+    "download_link": "http://localhost:5000/download/cairo_hotels_1672503492.json"
+  }
+  ```
+- format can be: 
+		- file: to get a download link 
+		-json/null: to get a raw data in json format
+
+#### Download Data
+```bash
+GET http://localhost:5000/download/cairo_hotels_1672503492.json
+```
+
+---
+
+## Logging
+- Logs are saved in `Scraper.log` for monitoring scraping progress and errors.
+
+---
+
+## Limitations
+- The scraper is designed specifically for Booking.com and might require updates if the website structure changes.
+- Ensure adherence to Booking.com’s Terms of Service when using this tool.
+
+---
+
+## Contributing
+Feel free to fork the repository and submit pull requests for improvements or bug fixes.
+
+---
+
+## License
+This project is licensed under the MIT License.
+
+---
+
+## Contact
+For issues or suggestions, please create an issue in the repository or contact [ahmedhesham122000@gmail.com].
+
+
