@@ -155,14 +155,22 @@ class Scraper():
                 if hotel_link: 
                     try: 
                         #get the subpage of the hotel to scrap it
-                        hotel_page_source = requests.get(hotel_link)
-                        hotel_page_source.raise_for_status()
-                
+                        response = requests.get(hotel_link, timeout=10)
+                        response.raise_for_status()
+
                         #sub_soup = BeautifulSoup(hotel_page_source, 'lxml')
-                        room_details = self.get_rooms(hotel_page_source.text)
+                        room_details = self.get_rooms(response.text)
 
                         #save the data in the dictionary 
                         hotel.update(room_details)
+                    
+                    except requests.exceptions.HTTPError as e: 
+                        if response.status_code == 429: 
+                            logging.warning("Too many requests. Retrying after a delay")
+                            time.sleep(60)
+                        else: 
+                            logging.error(f"Http error occurred: {e}")
+                            
                     except requests.exceptions.RequestException as e: 
                         logging.error(f'Failed to fetch hotel details for {title}: {e}')
                         continue
