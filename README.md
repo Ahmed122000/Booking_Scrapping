@@ -128,9 +128,6 @@ Response:
     "download_link": "http://localhost:5000/download/cairo_hotels_1672503492.json"
   }
   ```
-- format can be: 
-		- file: to get a download link 
-		-json/null: to get a raw data in json format
 
 #### Download Data
 ```bash
